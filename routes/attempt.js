@@ -16,16 +16,13 @@ router.post('/start', startAttempt);
 router.patch('/:attemptId/tabswitch', recordTabSwitch);
 router.post('/:attemptId/answers', submitAnswers);
 router.post('/:attemptId/feedback', submitFeedback);
+router.get('/:id', getAttempt);
 
 // Protected routes - require authentication
 router.use(protect);
 
-// Student route - get my attempts (MUST be before /:id route)
+// Student route - get my attempts (MUST be before protected /:id route)
 router.get('/my-attempts', getMyAttempts);
-
-router
-  .route('/:id')
-  .get(getAttempt);
 
 // Admin routes
 router.get('/quizzes/:quizId/attempts', 

@@ -188,7 +188,7 @@ exports.submitFeedback = asyncHandler(async (req, res, next) => {
 
 // @desc    Get attempt details
 // @route   GET /api/attempts/:id
-// @access  Private
+// @access  Public (for quiz takers) / Private (for viewing completed attempts)
 exports.getAttempt = asyncHandler(async (req, res, next) => {
   const attempt = await QuizAttempt.findById(req.params.id)
     .populate('quiz', 'title description createdBy')
@@ -198,23 +198,28 @@ exports.getAttempt = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Attempt not found', 404));
   }
 
-  // Check if user is authorized to view this attempt
-  const isOwner = req.user && (
-    (attempt.studentUserId && attempt.studentUserId._id.toString() === req.user.id) ||
-    (attempt.studentEmail && attempt.studentEmail === req.user.email)
-  );
-  
-  const isAdmin = req.user && req.user.role === 'admin';
-  const isQuizOwner =
-    req.user &&
-    req.user.role === 'admin' &&
-    attempt.quiz &&
-    attempt.quiz.createdBy &&
-    attempt.quiz.createdBy.toString() === req.user.id;
+  // Allow public access for active attempts (quiz takers need this)
+  // But for completed attempts, check authorization
+  if (attempt.endTime || attempt.isTerminatedDueToTabSwitch) {
+    // Completed attempt - check authorization
+    const isOwner = req.user && (
+      (attempt.studentUserId && attempt.studentUserId._id.toString() === req.user.id) ||
+      (attempt.studentEmail && attempt.studentEmail === req.user.email)
+    );
+    
+    const isAdmin = req.user && req.user.role === 'admin';
+    const isQuizOwner =
+      req.user &&
+      req.user.role === 'admin' &&
+      attempt.quiz &&
+      attempt.quiz.createdBy &&
+      attempt.quiz.createdBy.toString() === req.user.id;
 
-  if (!isOwner && !isAdmin && !isQuizOwner) {
-    return next(new ErrorResponse('Not authorized to view this attempt', 401));
+    if (!isOwner && !isAdmin && !isQuizOwner) {
+      return next(new ErrorResponse('Not authorized to view this attempt', 401));
+    }
   }
+  // For active attempts, allow anyone with the attemptId to access (they need it to take the quiz)
 
   res.status(200).json({
     success: true,
