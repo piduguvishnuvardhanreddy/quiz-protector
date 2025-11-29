@@ -11,28 +11,14 @@ const {
   getMyAttempts
 } = require('../controllers/attemptController');
 
-// Public route - no authentication required to start an attempt
+// Public routes - no authentication required
 router.post('/start', startAttempt);
+router.patch('/:attemptId/tabswitch', recordTabSwitch);
+router.post('/:attemptId/answers', submitAnswers);
+router.post('/:attemptId/feedback', submitFeedback);
 
 // Protected routes - require authentication
 router.use(protect);
-
-// Quiz-specific attempt routes
-router
-  .route('/')
-  .post(submitAnswers);
-
-router
-  .route('/:attemptId/answers')
-  .post(submitAnswers);
-
-router
-  .route('/:attemptId/tabswitch')
-  .patch(recordTabSwitch);
-
-router
-  .route('/:attemptId/feedback')
-  .post(submitFeedback);
 
 // Student route - get my attempts (MUST be before /:id route)
 router.get('/my-attempts', getMyAttempts);
